@@ -16,19 +16,43 @@ args = sys.argv
 
 # Parse user input
 def parse_commands(user_args):
+    # Checks if the flag is valid and that the right number of arguments have been given to run
+    if not check_valid(user_args):
+        print('Invalid Arguments: Review flag or that there are all 4 positional arguments')
+        return
+    # Runs the count links function
     if user_args[1] == '-c':
         count_links(sys.argv[2], sys.argv[3], sys.argv[4])
+    # Runs the extract and plot data function
     elif user_args[1] == '-p':
         plot_data()
+    # Allows for selection of image filter
     elif user_args[1] == '-i':
+        # Activates the sepia filter
         if user_args[3] == '-s':
             manipulate_image(user_args[3])
-        elif user_args[3] == '-p':
+        # Activates the grayscale filter
+        elif user_args[3] == '-g':
             manipulate_image(user_args[3])
-        elif user_args[3] == '-i':
+        # Activates the vertical flip filter
+        elif user_args[3] == '-f':
             manipulate_image(user_args[3])
-    else:
-        return False
+        # Activates the mirror (horizontal flip) filter
+        elif user_args[3] == '-m':
+            manipulate_image(user_args[3])
+        # Errors out if secondary flag is invalid
+        else:
+            print('Invalid Arguments: Secondary flag is not valid')
+            return
+
+
+def check_valid(commands):
+    # Checks if there are the required number of arguments
+    if len(commands) == 4:
+        # Checks if the initial flag is valid
+        if commands[1] in ['-c', '-p', '-i']:
+            return True
+    return False
 
 
 def make_soup_obj(rg_obj, link):
