@@ -10,9 +10,6 @@ import numpy as np
 # Define global variables
 args = sys.argv
 
-# print(final_url)
-# request_guard = RequestGuard(final_url[0])
-
 
 # Parse user input
 def parse_commands(user_args):
@@ -48,7 +45,7 @@ def parse_commands(user_args):
 
 def check_valid(commands):
     # Checks if there are the required number of arguments
-    if len(commands) == 4:
+    if len(commands) == 5:
         # Checks if the initial flag is valid
         if commands[1] in ['-c', '-p', '-i']:
             return True
@@ -70,7 +67,7 @@ def count_links(url, plot_file, csv_file):
     def process_url(link):
         # Get the link into the processable format
         # Return complete links
-        if link.startswith('http'):
+        if link.startswith('http') or link.startswith('https'):
             # Remove ending fragments from completed links
             if '#' in link:
                 parts = link.split('#')
