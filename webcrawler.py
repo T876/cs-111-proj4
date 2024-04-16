@@ -8,9 +8,6 @@ import numpy as np
 from image_processing import sepia, grayscale, flipped, mirrored
 import shutil
 
-# Define global variables
-args = sys.argv
-
 
 # Parse user input
 def parse_commands(user_args):
@@ -226,16 +223,24 @@ def manipulate_image(url, flag, output_prefix):
         image_half_urls.append(tag['src'])
     for image in image_half_urls:
         image_urls.append(process_url(image, domain, image))
-    for name in image_half_urls:
-        output_filename = output_prefix + name
-        response = requests.get(url, stream=True)
+    for i in range(len(image_half_urls)):
+        output_filename = output_prefix + image_half_urls[i]
+        response = requests.get(image_urls[i], stream=True)
         with open(output_filename, 'wb') as out_file:
             shutil.copyfileobj(response.raw, out_file)
         del response
 
-        sepia(output_filename, output_filename)
+        if flag == '-g':
+            grayscale(output_filename, output_filename)
+        if flag == '-f':
+            flipped(output_filename, output_filename)
+        if flag == '-m':
+            mirrored(output_filename, output_filename)
+        if flag == '-s':
+            sepia(output_filename, output_filename)
 
 
-
-
+# Define global variables
+args = sys.argv
+# Run commands
 parse_commands(args)
