@@ -22,7 +22,7 @@ def parse_commands(user_args):
         count_links(sys.argv[2], sys.argv[3], sys.argv[4])
     # Runs the extract and plot data function
     elif user_args[1] == '-p':
-        plot_data()
+        plot_data(sys.argv[2], sys.argv[3], sys.argv[4])
     # Allows for selection of image filter
     elif user_args[1] == '-i':
         # Activates the sepia filter
@@ -50,6 +50,14 @@ def check_valid(commands):
         if commands[1] in ['-c', '-p', '-i']:
             return True
     return False
+
+
+def make_rg_obj(url):
+    # Get the domain and prepare the request guard object
+    domain_finder = re.compile(r'https://.*?/')
+    domain = re.match(domain_finder, url).group()
+    rg_obj = RequestGuard(domain)
+    return rg_obj, domain
 
 
 def make_soup_obj(rg_obj, link):
@@ -100,10 +108,9 @@ def count_links(url, plot_file, csv_file):
     def update_link_visits(link):
         # Add links to the dictionary the first time they are visited
         if link not in link_visits:
-            link_visits[link] = 1
+            link_visits[link] = 0
         # Update the number of times links are visited each time they are visited
-        else:
-            link_visits[link] += 1
+        link_visits[link] += 1
 
     def make_hist(visits, o_plot_file):
         # Get the number of visits information from the link_visits list
@@ -129,10 +136,7 @@ def count_links(url, plot_file, csv_file):
                 writer.writerow([float(bin_edges[x]), float(hist[x])])
 
     # Main body
-    # Get the domain and prepare the request guard object
-    domain_finder = re.compile(r'https://.*?/')
-    domain = re.match(domain_finder, url).group()
-    rg_obj = RequestGuard(domain)
+    r_obj, domain = make_rg_obj(url)
     # Prepare lists and dictionary
     links_to_visit = [url]
     link_visits = {}
@@ -144,7 +148,7 @@ def count_links(url, plot_file, csv_file):
         current_url = links_to_visit[i]
         # Update lists and dictionary
         if current_url not in visited_urls:
-            html = make_soup_obj(rg_obj, current_url)
+            html = make_soup_obj(r_obj, current_url)
             if html is not None:
                 make_links_to_visit(html)
             visited_urls.add(current_url)
@@ -156,8 +160,9 @@ def count_links(url, plot_file, csv_file):
     make_csv_output(histo, edges, csv_file)
 
 
-def plot_data():
-    pass
+def plot_data(url, data_plot_file, data_csv):
+    r_obj, domain = make_rg_obj(url)
+    html = make_soup_obj(r_obj, url)
 
 
 def manipulate_image(flag):
