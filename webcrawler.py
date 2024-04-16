@@ -3,9 +3,10 @@ import requests
 import bs4
 import matplotlib.pyplot as plt
 from RequestGuard import RequestGuard
-import csv
 import re
 import numpy as np
+from image_processing import sepia, grayscale, flipped, mirrored
+import shutil
 
 # Define global variables
 args = sys.argv
@@ -26,17 +27,17 @@ def parse_commands(user_args):
     # Allows for selection of image filter
     elif user_args[1] == '-i':
         # Activates the sepia filter
-        if user_args[3] == '-s':
-            manipulate_image(user_args[3])
+        if user_args[4] == '-s':
+            manipulate_image(sys.argv[2], user_args[4], user_args[3])
         # Activates the grayscale filter
-        elif user_args[3] == '-g':
-            manipulate_image(user_args[3])
+        elif user_args[4] == '-g':
+            manipulate_image(user_args[2], user_args[4], user_args[3])
         # Activates the vertical flip filter
-        elif user_args[3] == '-f':
-            manipulate_image(user_args[3])
+        elif user_args[4] == '-f':
+            manipulate_image(user_args[2], user_args[4], user_args[3])
         # Activates the mirror (horizontal flip) filter
-        elif user_args[3] == '-m':
-            manipulate_image(user_args[3])
+        elif user_args[4] == '-m':
+            manipulate_image(user_args[2], user_args[4], user_args[3])
         # Errors out if secondary flag is invalid
         else:
             print('Invalid Arguments: Secondary flag is not valid')
@@ -69,31 +70,32 @@ def make_soup_obj(rg_obj, link):
         return html
 
 
+def process_url(link, og_domain, the_current_url):
+    # Get the link into the processable format
+    # Return complete links
+    if link.startswith('http') or link.startswith('https'):
+        # Remove ending fragments from completed links
+        if '#' in link:
+            parts = link.split('#')
+            return parts[0]
+        return link
+    # Process within a domain
+    if link.startswith('/'):
+        return og_domain + link[1:]
+    # Process link fragments
+    if link.startswith('#'):
+        return the_current_url
+    else:
+        # Find the base URL for internal links
+        url_match = re.compile(r'(https://.*/).*')
+        final_url = re.match(url_match, args[2]).group(1)
+        return final_url + link
+
+
 # Main functions
 def count_links(url, plot_file, csv_file):
     # Helper functions
-    def process_url(link, og_domain, the_current_url):
-        # Get the link into the processable format
-        # Return complete links
-        if link.startswith('http') or link.startswith('https'):
-            # Remove ending fragments from completed links
-            if '#' in link:
-                parts = link.split('#')
-                return parts[0]
-            return link
-        # Process within a domain
-        if link.startswith('/'):
-            return og_domain + link[1:]
-        # Process link fragments
-        if link.startswith('#'):
-            return the_current_url
-        else:
-            # Find the base URL for internal links
-            url_match = re.compile(r'(https://.*/).*')
-            final_url = re.match(url_match, args[2]).group(1)
-            return final_url + link
-
-    def make_links_to_visit(soup_obj, og_domain, the_current_url, request_object):
+    def make_links_to_visit(soup_obj, og_domain, the_current_url):
         # Find all the links on a page
         for tag in soup_obj.find_all('a'):
             href = tag.get('href')
@@ -156,7 +158,7 @@ def count_links(url, plot_file, csv_file):
                 html = None
             # Update lists and dictionary
             if html is not None:
-                make_links_to_visit(html, domain, current_url, r_obj)
+                make_links_to_visit(html, domain, current_url)
             visited_urls.add(current_url)
         # Increase counter for the loop
         i += 1
@@ -214,8 +216,26 @@ def plot_data(url, data_plot_file, data_csv):
                 file.write(f'{x_vals[x]},{points_1[x]},{points_2[x]}\n')
 
 
-def manipulate_image(flag):
-    pass
+def manipulate_image(url, flag, output_prefix):
+    r_obj, domain = make_rg_obj(url)
+    html = make_soup_obj(r_obj, url)
+    image_tags = html.find_all('img', )
+    image_half_urls = []
+    image_urls = []
+    for tag in image_tags:
+        image_half_urls.append(tag['src'])
+    for image in image_half_urls:
+        image_urls.append(process_url(image, domain, image))
+    for name in image_half_urls:
+        output_filename = output_prefix + name
+        response = requests.get(url, stream=True)
+        with open(output_filename, 'wb') as out_file:
+            shutil.copyfileobj(response.raw, out_file)
+        del response
+
+        sepia(output_filename, output_filename)
+
+
 
 
 parse_commands(args)
