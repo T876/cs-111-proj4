@@ -72,7 +72,7 @@ def make_soup_obj(rg_obj, link):
 # Main functions
 def count_links(url, plot_file, csv_file):
     # Helper functions
-    def process_url(link):
+    def process_url(link, og_domain, the_current_url):
         # Get the link into the processable format
         # Return complete links
         if link.startswith('http') or link.startswith('https'):
@@ -83,27 +83,24 @@ def count_links(url, plot_file, csv_file):
             return link
         # Process within a domain
         if link.startswith('/'):
-            return domain + link[1:]
+            return og_domain + link[1:]
         # Process link fragments
         if link.startswith('#'):
-            return url
+            return the_current_url
         else:
             # Find the base URL for internal links
             url_match = re.compile(r'(https://.*/).*')
             final_url = re.match(url_match, args[2]).group(1)
             return final_url + link
 
-    def make_links_to_visit(soup_obj):
+    def make_links_to_visit(soup_obj, og_domain, the_current_url):
         # Find all the links on a page
         for tag in soup_obj.find_all('a'):
             href = tag.get('href')
             # Get the link into a usable format
-            to_append = process_url(href)
-            # Add or update the dictionary
-            update_link_visits(to_append)
+            to_append = process_url(href, og_domain, the_current_url)
             # Add to the list of links that must be visited
-            if to_append not in links_to_visit:
-                links_to_visit.append(to_append)
+            links_to_visit.append(to_append)
 
     def update_link_visits(link):
         # Add links to the dictionary the first time they are visited
@@ -146,11 +143,13 @@ def count_links(url, plot_file, csv_file):
     while i < len(links_to_visit):
         # Verify what link is being processed
         current_url = links_to_visit[i]
+        # Add or update the dictionary
+        update_link_visits(current_url)
         # Update lists and dictionary
         if current_url not in visited_urls:
             html = make_soup_obj(r_obj, current_url)
             if html is not None:
-                make_links_to_visit(html)
+                make_links_to_visit(html, domain, current_url)
             visited_urls.add(current_url)
         # Increase counter for the loop
         i += 1
