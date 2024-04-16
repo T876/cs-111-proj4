@@ -100,9 +100,11 @@ def count_links(url, plot_file, csv_file):
             # Get the link into a usable format
             to_append = process_url(href, og_domain, the_current_url)
             # Add to the list of links that must be visited if the link is not forbidden
-            for forbidden_link in request_object.forbidden:
-                if forbidden_link not in to_append:
-                    links_to_visit.append(to_append)
+            # for forbidden_link in request_object.forbidden:
+            #     if forbidden_link not in to_append:
+            links_to_visit.append(to_append)
+                # else:
+                #     print(to_append)
 
     def update_link_visits(link):
         # Add links to the dictionary the first time they are visited
@@ -132,7 +134,7 @@ def count_links(url, plot_file, csv_file):
             writer = csv.writer(file)
             for x in range(len(hist)):
                 # Writing the start of the bin and the count as a csv float pair
-                writer.writerow([float(bin_edges[x]), float(hist[x])])
+                file.write(f'{float(bin_edges[x])},{float(hist[x])}\n')
 
     # Main body
     r_obj, domain = make_rg_obj(url)
@@ -149,7 +151,15 @@ def count_links(url, plot_file, csv_file):
         update_link_visits(current_url)
         # Update lists and dictionary
         if current_url not in visited_urls:
-            html = make_soup_obj(r_obj, current_url)
+            temp = True
+            for forbidden_url in r_obj.forbidden:
+                if forbidden_url in current_url:
+                    temp = False
+            if temp:
+                html = make_soup_obj(r_obj, current_url)
+            else:
+                html = None
+
             if html is not None:
                 make_links_to_visit(html, domain, current_url, r_obj)
             visited_urls.add(current_url)
