@@ -99,12 +99,8 @@ def count_links(url, plot_file, csv_file):
             href = tag.get('href')
             # Get the link into a usable format
             to_append = process_url(href, og_domain, the_current_url)
-            # Add to the list of links that must be visited if the link is not forbidden
-            # for forbidden_link in request_object.forbidden:
-            #     if forbidden_link not in to_append:
+            # Add to the list of links that must be visited
             links_to_visit.append(to_append)
-                # else:
-                #     print(to_append)
 
     def update_link_visits(link):
         # Add links to the dictionary the first time they are visited
@@ -131,7 +127,6 @@ def count_links(url, plot_file, csv_file):
     def make_csv_output(hist, bin_edges, o_csv_file):
         # Open the output file and prepare it to write to a csv file
         with open(o_csv_file, 'w') as file:
-            writer = csv.writer(file)
             for x in range(len(hist)):
                 # Writing the start of the bin and the count as a csv float pair
                 file.write(f'{float(bin_edges[x])},{float(hist[x])}\n')
@@ -149,7 +144,7 @@ def count_links(url, plot_file, csv_file):
         current_url = links_to_visit[i]
         # Add or update the dictionary
         update_link_visits(current_url)
-        # Update lists and dictionary
+        # Verifies link is not on the robots.txt
         if current_url not in visited_urls:
             temp = True
             for forbidden_url in r_obj.forbidden:
@@ -159,7 +154,7 @@ def count_links(url, plot_file, csv_file):
                 html = make_soup_obj(r_obj, current_url)
             else:
                 html = None
-
+            # Update lists and dictionary
             if html is not None:
                 make_links_to_visit(html, domain, current_url, r_obj)
             visited_urls.add(current_url)
@@ -173,9 +168,50 @@ def count_links(url, plot_file, csv_file):
 
 def plot_data(url, data_plot_file, data_csv):
     r_obj, domain = make_rg_obj(url)
-    if not r_obj.can_follow_link(url):
-        print(f"{url} doesn't exist in {domain}")
+    try:
+        requests.get(url)
+    except:
+        print(f'{url} doesn\'t exist')
     html = make_soup_obj(r_obj, url)
+    table = html.find(id='CS111-Project4b')
+    rows = table.find_all('tr')
+    x_vals = []
+    points_1 = []
+    points_2 = []
+    points_3 = []
+    points_4 = []
+    for row in rows:
+        data = row.find_all('td')
+        x_val = data[0]
+        y_vals = data[1:]
+        x_vals.append(float(x_val.get_text()))
+        points_1.append(float(y_vals[0].get_text()))
+        points_2.append(float(y_vals[1].get_text()))
+        if len(y_vals) > 2:
+            points_3.append(float(y_vals[2].get_text()))
+        if len(y_vals) > 3:
+            points_4.append(float(y_vals[3].get_text()))
+
+    # Plot points
+    plt.plot(x_vals, points_1, 'b')
+    plt.plot(x_vals, points_2, 'g')
+    if len(points_3) > 0:
+        plt.plot(x_vals, points_3, 'r')
+    if len(points_4) > 0:
+        plt.plot(x_vals, points_3, 'k')
+    plt.savefig(data_plot_file)
+    plt.clf()
+
+    # Make a CSV with the points
+    with open(data_csv, 'w') as file:
+        for x in range(len(x_vals)):
+            # Writing the start of the bin and the count as a csv float pair
+            if len(points_4) > 0:
+                file.write(f'{x_vals[x]},{points_1[x]},{points_2[x]},{points_3[x]},{points_4[x]}\n')
+            elif len(points_3) > 0:
+                file.write(f'{x_vals[x]},{points_1[x]},{points_2[x]},{points_3[x]}\n')
+            else:
+                file.write(f'{x_vals[x]},{points_1[x]},{points_2[x]}\n')
 
 
 def manipulate_image(flag):
