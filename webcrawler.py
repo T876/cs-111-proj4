@@ -8,10 +8,9 @@ import re
 
 # Define global variables
 args = sys.argv
-url_match = re.compile(r'(https://.*/).*')
-final_url = re.findall(url_match, args[2])
-print(final_url)
-request_guard = RequestGuard(final_url[0])
+
+# print(final_url)
+# request_guard = RequestGuard(final_url[0])
 
 
 # Parse user input
@@ -33,52 +32,61 @@ def parse_commands(user_args):
 
 # Main functions
 def count_links(url, plot_file, csv_file):
-    #
-    # links_dict = {}
-    # print(request_guard.domain)
-    #
-    # def visit_link(start):
-    #
-    #      # Get the URL, construct bs4 object
-    #     response = requests.get(start)
-    #     print('good')
-    #     soup = bs4.BeautifulSoup(response.content, 'html.parser')
-    #
-    #     # Build list of links to visit
-    #     links_to_visit = []
-    #     for tag in soup.find_all('a', href=True):
-    #         print('hit')
-    #         # partialUrlMatch = re.compile(r'.*\.html')
-    #         if 'https://' not in tag['href']:
-    #             to_visit = final_url[0] + tag['href']
-    #         else:
-    #             to_visit = tag['href']
-    #         print(to_visit)
-    #         print(request_guard.can_follow_link(to_visit))
-    #         if request_guard.can_follow_link(to_visit):
-    #             links_to_visit.append(to_visit)
-    #     print(links_to_visit)
-    #
-    #
-    #
-    #     for thing in links_to_visit:
-    #         # TODO: Check if the link is forbidden, stop if it is
-    #         print(thing)
-    #         if thing in links_dict:
-    #             links_dict[thing] += 1
-    #         else:
-    #             links_dict[thing] = 1
-    #             visit_link(thing)
-    # # TODO: plot the results from our dictionary
-    # visit_link(url)
-    # print(links_dict)
-    #
-    # plt.hist(links_dict)
-    # plt.savefig(plot_file)
-    # plt.clf()
-    # with open(csv_file, 'w') as file2:
-    #     writer = csv.DictWriter(file2, links_dict)
-    #     writer.writerow(links_dict)
+    # Construct request guard
+    domain_finder = re.compile(r'https://.*?/')
+    domain = re.match(domain_finder, url).group()
+    rg_obj = RequestGuard(domain)
+    links_to_visit = [url]
+    link_visits = {}
+
+    def process_url(link):
+        if 'http' in link:
+            if '#' in link:
+                parts = link.split('#')
+                return parts[0]
+            return link
+        if link[0] == '/':
+            return domain + link[1:]
+        if '#' in link:
+            return url
+        else:
+            # Find the base URL for internal links
+            url_match = re.compile(r'(https://.*/).*')
+            final_url = re.findall(url_match, args[2])
+            return final_url[0] + link
+
+    for link in links_to_visit:
+        if rg_obj.can_follow_link(link):
+            page = requests.get(link)
+            html = bs4.BeautifulSoup(page.text, "html.parser")
+            for tag in html.find_all('a'):
+                href = tag.get('href')
+                to_append = process_url(href)
+                if to_append not in links_to_visit:
+                    links_to_visit.append(to_append)
+
+                if to_append not in link_visits:
+                    link_visits[to_append] = 1
+                else:
+                    link_visits[to_append] += 1
+    print(links_to_visit)
+    print(link_visits)
+
+    final_data = list(link_visits.values())
+    print(final_data)
+    bins = [1, 2, 3, 4, 5, 6]
+
+    plt.hist(final_data, bins=bins)
+    plt.savefig(plot_file)
+    plt.clf()
+
+    with open(csv_file, "w") as file:
+        for x in bins[:-1]:
+            count = 0
+            for item in final_data:
+                if x == item:
+                    count += 1
+            file.write(f'{float(x)},{float(count)}\n')
 
 
 def plot_data():
@@ -87,5 +95,6 @@ def plot_data():
 
 def manipulate_image(flag):
     pass
+
 
 parse_commands(args)
