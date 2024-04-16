@@ -162,6 +162,8 @@ def count_links(url, plot_file, csv_file):
 
 def plot_data(url, data_plot_file, data_csv):
     r_obj, domain = make_rg_obj(url)
+    if not r_obj.can_follow_link(url):
+        print(f"{url} doesn't exist in {domain}")
     html = make_soup_obj(r_obj, url)
 
 
