@@ -96,6 +96,7 @@ def count_links(url, plot_file, csv_file):
         # Find all the links on a page
         for tag in soup_obj.find_all('a'):
             href = tag.get('href')
+            print(href)
             # Get the link into a usable format
             to_append = process_url(href, og_domain, the_current_url)
             # Add to the list of links that must be visited
@@ -169,8 +170,8 @@ def plot_data(url, data_plot_file, data_csv):
     r_obj, domain = make_rg_obj(url)
     try:
         requests.get(url)
-    except:
-        print(f'{url} doesn\'t exist')
+    except Exception as e:
+        print(f'{url} does not exist {e}')
     html = make_soup_obj(r_obj, url)
     table = html.find(id='CS111-Project4b')
     rows = table.find_all('tr')
